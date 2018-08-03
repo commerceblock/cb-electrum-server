@@ -13,7 +13,6 @@ import electrumx
 from electrumx.lib.server_base import ServerBase
 from electrumx.lib.util import version_string
 from electrumx.server.chain_state import ChainState
-from electrumx.server.mempool import MemPool
 from electrumx.server.session import SessionManager
 
 
@@ -97,6 +96,7 @@ class Controller(ServerBase):
         notifications = Notifications()
         daemon = env.coin.DAEMON(env)
         BlockProcessor = env.coin.BLOCK_PROCESSOR
+        MemPool = env.coin.MEM_POOL
         bp = BlockProcessor(env, daemon, notifications)
         mempool = MemPool(env.coin, daemon, notifications, bp.lookup_utxos)
         chain_state = ChainState(env, daemon, bp, notifications)

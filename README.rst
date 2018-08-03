@@ -17,3 +17,23 @@ Documentation
 =============
 
 See `readthedocs <https://electrumx.readthedocs.io/>`_.
+
+Instructions
+=============
+
+* Environmental Variables Required *
+DB_DIRECTORY = ~/db_directory   # or any custom dir
+DAEMON_URL = RPC_USER:RPC_PASS@RPC_HOST:RPC_PORT/
+COIN = Ocean
+NET = testnet   # or mainnet / testnet excludes attestation hash
+
+* Unit Testing *
+pip3 install x11_hash tribus_hash quark_hash  xevan_hash
+pip3 install pytest
+pytest
+
+* Running the server
+- brew install leveldb
+- python3 setup.py build
+- python3 setup.py install
+- ./electrumx_server

@@ -43,7 +43,8 @@ from electrumx.lib.hash import Base58, hash160, double_sha256, hash_to_hex_str
 from electrumx.lib.hash import HASHX_LEN
 from electrumx.lib.script import ScriptPubKey, OpCodes
 import electrumx.lib.tx as lib_tx
-from electrumx.server.block_processor import BlockProcessor
+from electrumx.server.block_processor import BlockProcessor, OceanBlockProcessor
+from electrumx.server.mempool import MemPool, OceanMemPool
 import electrumx.server.daemon as daemon
 from electrumx.server.session import ElectrumX, DashElectrumX
 
@@ -70,6 +71,7 @@ class Coin(object):
     DESERIALIZER = lib_tx.Deserializer
     DAEMON = daemon.Daemon
     BLOCK_PROCESSOR = BlockProcessor
+    MEM_POOL = MemPool
     MEMPOOL_HISTOGRAM_REFRESH_SECS = 500
     XPUB_VERBYTES = bytes('????', 'utf-8')
     XPRV_VERBYTES = bytes('????', 'utf-8')
@@ -644,6 +646,131 @@ class BitcoinNolnet(BitcoinCash):
     RPC_PORT = 28332
     PEER_DEFAULT_PORTS = {'t': '52001', 's': '52002'}
 
+class Ocean(Coin):
+    NAME = "Ocean"
+    SHORTNAME = "CBT"
+    NET = "mainnet"
+
+    BASIC_HEADER_SIZE = 140
+    STATIC_BLOCK_HEADERS = False
+    DESERIALIZER = lib_tx.DeserializerOcean
+    BLOCK_PROCESSOR = OceanBlockProcessor
+    MEM_POOL = OceanMemPool
+
+    '''
+    # Ocean - CustomParams
+    XPUB_VERBYTES = bytes.fromhex("043587cf")
+    XPRV_VERBYTES = bytes.fromhex("04358394")
+    P2PKH_VERBYTE = bytes.fromhex("eb")
+    P2SH_VERBYTES = [bytes.fromhex("4b")]
+    WIF_BYTE = bytes.fromhex("ef")
+    '''
+
+    # Ocean - MainParams
+    XPUB_VERBYTES = bytes.fromhex("0488b21e")
+    XPRV_VERBYTES = bytes.fromhex("0488ade4")
+    P2PKH_VERBYTE = bytes.fromhex("00")
+    P2SH_VERBYTES = [bytes.fromhex("05")]
+    WIF_BYTE = bytes.fromhex("80")
+
+    GENESIS_HASH = ('085bd64c8503b174830687e77ef54e0b'
+                    'ef1e26b34d8eb2c55f6485f72d34f7f2')
+
+    TX_COUNT = 200
+    TX_COUNT_HEIGHT = 100
+    TX_PER_BLOCK = 2
+
+    # electrum header NOT TESTED
+    @classmethod
+    def electrum_header(cls, header, height):
+        version, = struct.unpack('<I', header[:4])
+        timestamp, block_height = struct.unpack('<II', header[cls.BASIC_HEADER_SIZE-8:
+                                                            cls.BASIC_HEADER_SIZE])
+
+        assert block_height == height
+
+        challenge = ''
+        proof = ''
+        challenge_size = header[cls.BASIC_HEADER_SIZE]
+        if challenge_size > 0:
+            challenge = hash_to_hex_str(header[cls.BASIC_HEADER_SIZE+1:
+                                                cls.BASIC_HEADER_SIZE+1+challenge_size])
+            proof_size = header[cls.BASIC_HEADER_SIZE+1+challenge_size]
+            if proof_size > 0:
+                proof = hash_to_hex_str(header[cls.BASIC_HEADER_SIZE+1+challenge_size+1:
+                                            cls.BASIC_HEADER_SIZE+1+challenge_size+1+proof_size])
+
+        return {
+            'block_height': height,
+            'version': version,
+            'prev_block_hash': hash_to_hex_str(header[4:36]),
+            'merkle_root': hash_to_hex_str(header[36:68]),
+            'contract_hash': hash_to_hex_str(header[68:100]),
+            'attestation_hash': hash_to_hex_str(header[100:132]),
+            'timestamp': timestamp,
+            'challenge': challenge,
+            'proof': proof
+        }
+
+    @classmethod
+    def header_hash(cls, header):
+        '''Return block header hash calculated from header excluding proof solution'''
+        challenge_size = header[cls.BASIC_HEADER_SIZE]
+        header_without_proof = header[:cls.BASIC_HEADER_SIZE+1+challenge_size]
+        return double_sha256(header_without_proof)
+
+    @classmethod
+    def block_header(cls, block, height):
+        '''Return the block header bytes'''
+        deserializer = cls.DESERIALIZER(block)
+        return deserializer.read_header(height, cls.BASIC_HEADER_SIZE)
+
+    @classmethod
+    def genesis_block(cls, block):
+        '''Check the Genesis block is the right one for this coin and return the whole block'''
+        header = cls.block_header(block, 0)
+        header_hex_hash = hash_to_hex_str(cls.header_hash(header))
+        if header_hex_hash != cls.GENESIS_HASH:
+            raise CoinError('genesis block has hash {} expected {}'
+                            .format(header_hex_hash, cls.GENESIS_HASH))
+
+        return block
+
+class OceanTestnet(Ocean):
+    NET = "testnet"
+    BASIC_HEADER_SIZE = 108     # excluding attestation hash
+    GENESIS_HASH = ('357abd41543a09f9290ff4b4ae008e317f252b80c96492bd9f346cced0943a7f')
+
+    # electrum header NOT TESTED
+    @classmethod
+    def electrum_header(cls, header, height):
+        version, = struct.unpack('<I', header[:4])
+        timestamp, block_height = struct.unpack('<II', header[cls.BASIC_HEADER_SIZE-8:
+                                                            cls.BASIC_HEADER_SIZE])
+
+        assert block_height == height
+
+        challenge = ''
+        proof = ''
+        challenge_size = header[cls.BASIC_HEADER_SIZE]
+        if challenge_size > 0:
+            challenge = hash_to_hex_str(header[cls.BASIC_HEADER_SIZE+1:
+                                                cls.BASIC_HEADER_SIZE+1+challenge_size])
+            proof_size = header[cls.BASIC_HEADER_SIZE+1+challenge_size]
+            if proof_size > 0:
+                proof = hash_to_hex_str(header[cls.BASIC_HEADER_SIZE+1+challenge_size+1:
+                                            cls.BASIC_HEADER_SIZE+1+challenge_size+1+proof_size])
+
+        return {
+            'block_height': height,
+            'version': version,
+            'prev_block_hash': hash_to_hex_str(header[4:36]),
+            'merkle_root': hash_to_hex_str(header[36:68]),
+            'contract_hash': hash_to_hex_str(header[68:100]),
+            'timestamp': timestamp,
+            'challenge': challenge,
+            'proof': proof
+        }
 
 class Litecoin(Coin):
     NAME = "Litecoin"
