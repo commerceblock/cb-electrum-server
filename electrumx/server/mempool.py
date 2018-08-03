@@ -16,7 +16,7 @@ import attr
 from aiorpcx import TaskGroup, run_in_thread
 
 from electrumx.lib.hash import hash_to_hex_str, hex_str_to_hash
-from electrumx.lib.util import class_logger, chunks
+from electrumx.lib.util import class_logger, chunks, unpack_uint64_from
 from electrumx.server.db import UTXO
 
 
@@ -190,6 +190,9 @@ class MemPool(object):
 
         return touched
 
+    def _get_txout_value(self, txout):
+        return txout.value
+
     async def _fetch_and_accept(self, hashes, all_hashes, touched):
         '''Fetch a list of mempool transactions.'''
         hex_hashes_iter = (hash_to_hex_str(hash) for hash in hashes)
@@ -209,7 +212,7 @@ class MemPool(object):
                 # Convert the inputs and outputs into (hashX, value) pairs
                 txin_pairs = tuple((txin.prev_hash, txin.prev_idx)
                                    for txin in tx.inputs)
-                txout_pairs = tuple((to_hashX(txout.pk_script), txout.value)
+                txout_pairs = tuple((to_hashX(txout.pk_script), self._get_txout_value(txout))
                                     for txout in tx.outputs)
                 txs[hash] = MemPoolTx(txin_pairs, None, txout_pairs,
                                       0, tx_size)
@@ -311,3 +314,13 @@ class MemPool(object):
                 if hX == hashX:
                     utxos.append(UTXO(-1, pos, tx_hash, 0, value))
         return utxos
+
+class OceanMemPool(MemPool):
+    def _get_txout_value(self, txout):
+        s_value = txout.value
+        version = s_value[0]
+        if version == 1 or version == 0xff:
+            int_value, = unpack_uint64_from(s_value[1:], 0)
+            return int_value
+        else:
+            raise Exception("Confidential transactions are not yet handled")
