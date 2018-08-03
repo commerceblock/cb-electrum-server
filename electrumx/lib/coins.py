@@ -43,8 +43,8 @@ from electrumx.lib.hash import Base58, hash160, double_sha256, hash_to_hex_str
 from electrumx.lib.hash import HASHX_LEN
 from electrumx.lib.script import ScriptPubKey, OpCodes
 import electrumx.lib.tx as lib_tx
-from electrumx.server.block_processor import BlockProcessor, OceanBlockProcessor
 from electrumx.server.mempool import MemPool, OceanMemPool
+import electrumx.server.block_processor as block_proc
 import electrumx.server.daemon as daemon
 from electrumx.server.session import ElectrumX, DashElectrumX
 
@@ -70,7 +70,7 @@ class Coin(object):
     SESSIONCLS = ElectrumX
     DESERIALIZER = lib_tx.Deserializer
     DAEMON = daemon.Daemon
-    BLOCK_PROCESSOR = BlockProcessor
+    BLOCK_PROCESSOR = block_proc.BlockProcessor
     MEM_POOL = MemPool
     MEMPOOL_HISTOGRAM_REFRESH_SECS = 500
     XPUB_VERBYTES = bytes('????', 'utf-8')
@@ -406,7 +406,7 @@ class HOdlcoin(Coin):
 
 class BitcoinCash(BitcoinMixin, Coin):
     NAME = "BitcoinCash"
-    SHORTNAME = "BCC"
+    SHORTNAME = "BCH"
     TX_COUNT = 246362688
     TX_COUNT_HEIGHT = 511484
     TX_PER_BLOCK = 400
@@ -654,7 +654,7 @@ class Ocean(Coin):
     BASIC_HEADER_SIZE = 140
     STATIC_BLOCK_HEADERS = False
     DESERIALIZER = lib_tx.DeserializerOcean
-    BLOCK_PROCESSOR = OceanBlockProcessor
+    BLOCK_PROCESSOR = block_proc.OceanBlockProcessor
     MEM_POOL = OceanMemPool
 
     '''
@@ -1803,6 +1803,65 @@ class BitcoinAtom(Coin):
         return deserializer.read_header(height, cls.BASIC_HEADER_SIZE)
 
 
+class Decred(Coin):
+    NAME = "Decred"
+    SHORTNAME = "DCR"
+    NET = "mainnet"
+    XPUB_VERBYTES = bytes.fromhex("02fda926")
+    XPRV_VERBYTES = bytes.fromhex("02fda4e8")
+    P2PKH_VERBYTE = bytes.fromhex("073f")
+    P2SH_VERBYTES = [bytes.fromhex("071a")]
+    WIF_BYTE = bytes.fromhex("230e")
+    GENESIS_HASH = ('298e5cc3d985bfe7f81dc135f360abe0'
+                    '89edd4396b86d2de66b0cef42b21d980')
+    BASIC_HEADER_SIZE = 180
+    HEADER_HASH = lib_tx.DeserializerDecred.blake256
+    DESERIALIZER = lib_tx.DeserializerDecred
+    DAEMON = daemon.DecredDaemon
+    BLOCK_PROCESSOR = block_proc.DecredBlockProcessor
+    ENCODE_CHECK = partial(Base58.encode_check,
+                           hash_fn=lib_tx.DeserializerDecred.blake256d)
+    DECODE_CHECK = partial(Base58.decode_check,
+                           hash_fn=lib_tx.DeserializerDecred.blake256d)
+    HEADER_UNPACK = struct.Struct('<i32s32s32sH6sHBBIIQIIII32sI').unpack_from
+    TX_COUNT = 4629388
+    TX_COUNT_HEIGHT = 260628
+    TX_PER_BLOCK = 17
+    REORG_LIMIT = 1000
+    RPC_PORT = 9109
+
+    @classmethod
+    def header_hash(cls, header):
+        '''Given a header return the hash.'''
+        return cls.HEADER_HASH(header)
+
+    @classmethod
+    def block(cls, raw_block, height):
+        '''Return a Block namedtuple given a raw block and its height.'''
+        if height > 0:
+            return super().block(raw_block, height)
+        else:
+            return Block(raw_block, cls.block_header(raw_block, height), [])
+
+    @classmethod
+    def electrum_header(cls, header, height):
+        labels = ('version', 'prev_block_hash', 'merkle_root', 'stake_root',
+                  'vote_bits', 'final_state', 'voters', 'fresh_stake',
+                  'revocations', 'pool_size', 'bits', 'sbits', 'block_height',
+                  'size', 'timestamp', 'nonce', 'extra_data', 'stake_version')
+        values = cls.HEADER_UNPACK(header)
+        h = dict(zip(labels, values))
+
+        # Convert some values
+        assert h['block_height'] == height
+        h['prev_block_hash'] = hash_to_hex_str(h['prev_block_hash'])
+        h['merkle_root'] = hash_to_hex_str(h['merkle_root'])
+        h['stake_root'] = hash_to_hex_str(h['stake_root'])
+        h['final_state'] = h['final_state'].hex()
+        h['extra_data'] = h['extra_data'].hex()
+        return h
+
+
 class Axe(Dash):
     NAME = "Axe"
     SHORTNAME = "AXE"
@@ -2104,4 +2163,53 @@ class Minexcoin(MinexcoinMixin, Coin):
     PEERS = [
         'elex01-ams.turinex.eu s t',
         'eu.minexpool.nl s t'
+    ]
+
+
+class Groestlcoin(Coin):
+    NAME = "Groestlcoin"
+    SHORTNAME = "GRS"
+    NET = "mainnet"
+    XPUB_VERBYTES = bytes.fromhex("0488b21e")
+    XPRV_VERBYTES = bytes.fromhex("0488ade4")
+    P2PKH_VERBYTE = bytes.fromhex("24")
+    P2SH_VERBYTES = [bytes.fromhex("05")]
+    WIF_BYTE = bytes.fromhex("80")
+    GENESIS_HASH = ('00000ac5927c594d49cc0bdb81759d0d'
+                    'a8297eb614683d3acb62f0703b639023')
+    DESERIALIZER = lib_tx.DeserializerGroestlcoin
+    TX_COUNT = 115900
+    TX_COUNT_HEIGHT = 1601528
+    TX_PER_BLOCK = 5
+    RPC_PORT = 1441
+    PEERS = [
+        'electrum1.groestlcoin.org s t',
+        'electrum2.groestlcoin.org s t',
+        '6brsrbiinpc32tfc.onion t',
+        'xkj42efxrcy6vbfw.onion t',
+    ]
+
+    @classmethod
+    def header_hash(cls, header):
+        '''Given a header return the hash.'''
+        import groestlcoin_hash
+        return groestlcoin_hash.getHash(header, len(header))
+
+
+class GroestlcoinTestnet(Groestlcoin):
+    SHORTNAME = "TGRS"
+    NET = "testnet"
+    XPUB_VERBYTES = bytes.fromhex("043587cf")
+    XPRV_VERBYTES = bytes.fromhex("04358394")
+    P2PKH_VERBYTE = bytes.fromhex("6f")
+    P2SH_VERBYTES = [bytes.fromhex("c4")]
+    WIF_BYTE = bytes.fromhex("ef")
+    GENESIS_HASH = ('000000ffbb50fc9898cdd36ec163e6ba'
+                    '23230164c0052a28876255b7dcf2cd36')
+    RPC_PORT = 17766
+    PEERS = [
+        'electrum-test1.groestlcoin.org s t',
+        'electrum-test2.groestlcoin.org s t',
+        '7frvhgofuf522b5i.onion t',
+        'aocojvqcybdoxekv.onion t',
     ]

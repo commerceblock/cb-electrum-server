@@ -29,8 +29,9 @@
 
 
 from collections import namedtuple
+from struct import pack
 
-from electrumx.lib.hash import double_sha256, hash_to_hex_str
+from electrumx.lib.hash import sha256, double_sha256, hash_to_hex_str
 from electrumx.lib.util import (
     cachedproperty, unpack_int32_from, unpack_int64_from,
     unpack_uint16_from, unpack_uint32_from, unpack_uint64_from
@@ -79,6 +80,8 @@ class Deserializer(object):
     millions of times during sync.
     '''
 
+    TX_HASH_FN = staticmethod(double_sha256)
+
     def __init__(self, binary, start=0):
         assert isinstance(binary, bytes)
         self.binary = binary
@@ -101,7 +104,7 @@ class Deserializer(object):
         we process it in the natural serialized order.
         '''
         start = self.cursor
-        return self.read_tx(), double_sha256(self.binary[start:self.cursor])
+        return self.read_tx(), self.TX_HASH_FN(self.binary[start:self.cursor])
 
     def read_tx_and_vsize(self):
         '''Return a (deserialized TX, vsize) pair.'''
@@ -213,7 +216,7 @@ class DeserializerSegWit(Deserializer):
         marker = self.binary[self.cursor + 4]
         if marker:
             tx = super().read_tx()
-            tx_hash = double_sha256(self.binary[start:self.cursor])
+            tx_hash = self.TX_HASH_FN(self.binary[start:self.cursor])
             return tx, tx_hash, self.binary_length
 
         # Ugh, this is nasty.
@@ -237,7 +240,7 @@ class DeserializerSegWit(Deserializer):
         vsize = (3 * base_size + self.binary_length) // 4
 
         return TxSegWit(version, marker, flag, inputs, outputs, witness,
-                        locktime), double_sha256(orig_ser), vsize
+                        locktime), self.TX_HASH_FN(orig_ser), vsize
 
     def read_tx(self):
         return self._read_tx_parts()[0]
@@ -680,6 +683,10 @@ class DeserializerBitcoinAtom(DeserializerSegWit):
         return self._read_nbytes(header_len)
 
 
+class DeserializerGroestlcoin(DeserializerSegWit):
+    TX_HASH_FN = staticmethod(sha256)
+
+
 # Decred
 class TxInputDcr(namedtuple("TxInput", "prev_hash prev_idx tree sequence")):
     '''Class representing a Decred transaction input.'''
@@ -689,8 +696,6 @@ class TxInputDcr(namedtuple("TxInput", "prev_hash prev_idx tree sequence")):
 
     @cachedproperty
     def is_coinbase(self):
-        # The previous output of a coin base must have a max value index and a
-        # zero hash.
         return (self.prev_hash == TxInputDcr.ZERO and
                 self.prev_idx == TxInputDcr.MINUS_1)
 
@@ -701,13 +706,13 @@ class TxInputDcr(namedtuple("TxInput", "prev_hash prev_idx tree sequence")):
 
 
 class TxOutputDcr(namedtuple("TxOutput", "value version pk_script")):
-    '''Class representing a transaction output.'''
+    '''Class representing a Decred transaction output.'''
     pass
 
 
 class TxDcr(namedtuple("Tx", "version inputs outputs locktime expiry "
                              "witness")):
-    '''Class representing transaction that has a time field.'''
+    '''Class representing a Decred  transaction.'''
 
     @cachedproperty
     def is_coinbase(self):
@@ -715,22 +720,38 @@ class TxDcr(namedtuple("Tx", "version inputs outputs locktime expiry "
 
 
 class DeserializerDecred(Deserializer):
-
     @staticmethod
     def blake256(data):
         from blake256.blake256 import blake_hash
         return blake_hash(data)
 
+    @staticmethod
+    def blake256d(data):
+        from blake256.blake256 import blake_hash
+        return blake_hash(blake_hash(data))
+
+    def read_tx(self):
+        return self._read_tx_parts(produce_hash=False)[0]
+
+    def read_tx_and_hash(self):
+        tx, tx_hash, vsize = self._read_tx_parts()
+        return tx, tx_hash
+
+    def read_tx_and_vsize(self):
+        tx, tx_hash, vsize = self._read_tx_parts(produce_hash=False)
+        return tx, vsize
+
     def read_tx_block(self):
         '''Returns a list of (deserialized_tx, tx_hash) pairs.'''
-        read_tx = self.read_tx
-        txs = [read_tx() for _ in range(self._read_varint())]
-        stxs = [read_tx() for _ in range(self._read_varint())]
+        read = self.read_tx_and_hash
+        txs = [read() for _ in range(self._read_varint())]
+        stxs = [read() for _ in range(self._read_varint())]
         return txs + stxs
 
-    def _read_inputs(self):
-        read_input = self._read_input
-        return [read_input() for i in range(self._read_varint())]
+    def read_tx_tree(self):
+        '''Returns a list of deserialized_tx without tx hashes.'''
+        read_tx = self.read_tx
+        return [read_tx() for _ in range(self._read_varint())]
 
     def _read_input(self):
         return TxInputDcr(
@@ -739,10 +760,6 @@ class DeserializerDecred(Deserializer):
             self._read_byte(),       # tree
             self._read_le_uint32(),  # sequence
         )
-
-    def _read_outputs(self):
-        read_output = self._read_output
-        return [read_output() for _ in range(self._read_varint())]
 
     def _read_output(self):
         return TxOutputDcr(
@@ -763,15 +780,29 @@ class DeserializerDecred(Deserializer):
         script = self._read_varbytes()
         return value_in, block_height, block_index, script
 
-    def read_tx(self):
+    def _read_tx_parts(self, produce_hash=True):
         start = self.cursor
         version = self._read_le_int32()
         inputs = self._read_inputs()
         outputs = self._read_outputs()
         locktime = self._read_le_uint32()
         expiry = self._read_le_uint32()
-        no_witness_tx = b'\x01\x00\x01\x00' + self.binary[start+4:self.cursor]
+        end_prefix = self.cursor
         witness = self._read_witness(len(inputs))
+
+        # Drop the coinbase-like input from a vote tx as it creates problems
+        # with UTXOs lookups and mempool management
+        if inputs[0].is_coinbase and len(inputs) > 1:
+            inputs = inputs[1:]
+
+        if produce_hash:
+            # TxSerializeNoWitness << 16 == 0x10000
+            no_witness_header = pack('<I', 0x10000 | (version & 0xffff))
+            prefix_tx = no_witness_header + self.binary[start+4:end_prefix]
+            tx_hash = self.blake256(prefix_tx)
+        else:
+            tx_hash = None
+
         return TxDcr(
             version,
             inputs,
@@ -779,4 +810,4 @@ class DeserializerDecred(Deserializer):
             locktime,
             expiry,
             witness
-        ), DeserializerDecred.blake256(no_witness_tx)
+        ), tx_hash, self.cursor - start

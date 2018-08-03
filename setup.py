@@ -1,5 +1,5 @@
 import setuptools
-version = '1.7.2'
+version = '1.7.3'
 
 setuptools.setup(
     name='electrumX',
@@ -11,6 +11,7 @@ setuptools.setup(
     # "tribus_hash" package is required to sync Denarius network.
     # "blake256" package is required to sync Decred network.
     # "xevan_hash" package is required to sync Xuez network.
+    # "groestlcoin_hash" package is required to sync Groestlcoin network.
     install_requires=['aiorpcX == 0.5.9', 'attrs>=15',
                       'plyvel', 'pylru', 'aiohttp >= 2'],
     packages=setuptools.find_packages(include=('electrumx*',)),
