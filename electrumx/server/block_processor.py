@@ -21,7 +21,7 @@ import electrumx
 from electrumx.server.daemon import DaemonError
 from electrumx.lib.hash import hash_to_hex_str, HASHX_LEN
 from electrumx.lib.merkle import Merkle, MerkleCache
-from electrumx.lib.util import chunks, formatted_time, class_logger
+from electrumx.lib.util import chunks, formatted_time, class_logger, unpack_uint64_from
 import electrumx.server.db
 
 
@@ -486,6 +486,9 @@ class BlockProcessor(electrumx.server.db.DB):
                              .format(len(blocks), s,
                                      time.time() - start))
 
+    def _get_txout_value(self, txout):
+        return txout.value
+
     def advance_txs(self, txs):
         self.tx_hashes.append(b''.join(tx_hash for tx, tx_hash in txs))
 
@@ -520,7 +523,7 @@ class BlockProcessor(electrumx.server.db.DB):
                 if hashX:
                     append_hashX(hashX)
                     put_utxo(tx_hash + s_pack('<H', idx),
-                             hashX + tx_numb + s_pack('<Q', txout.value))
+                             hashX + tx_numb + s_pack('<Q', self._get_txout_value(txout)))
 
             append_hashXs(hashXs)
             update_touched(hashXs)
@@ -826,3 +829,13 @@ class BlockProcessor(electrumx.server.db.DB):
             self.blocks_event.set()
             return True
         return False
+
+class OceanBlockProcessor(BlockProcessor):
+    def _get_txout_value(self, txout):
+        s_value = txout.value
+        version = s_value[0]
+        if version == 1 or version == 0xff:
+            int_value, = unpack_uint64_from(s_value[1:], 0)
+            return int_value
+        else:
+            raise Exception("Confidential transactions are not yet handled")
