@@ -28,7 +28,7 @@ COIN = Ocean
 NET = testnet   # or mainnet / testnet excludes attestation hash
 
 * Unit Testing *
-pip3 install x11_hash tribus_hash quark_hash  xevan_hash
+pip3 install x11_hash tribus_hash quark_hash xevan_hash groestlcoin_hash blake256
 pip3 install pytest
 pytest
 
