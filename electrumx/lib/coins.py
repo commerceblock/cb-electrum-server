@@ -657,11 +657,22 @@ class Ocean(Coin):
     BLOCK_PROCESSOR = OceanBlockProcessor
     MEM_POOL = OceanMemPool
 
+    '''
+    # Ocean - CustomParams
     XPUB_VERBYTES = bytes.fromhex("043587cf")
     XPRV_VERBYTES = bytes.fromhex("04358394")
     P2PKH_VERBYTE = bytes.fromhex("eb")
     P2SH_VERBYTES = [bytes.fromhex("4b")]
     WIF_BYTE = bytes.fromhex("ef")
+    '''
+
+    # Ocean - MainParams
+    XPUB_VERBYTES = bytes.fromhex("0488b21e")
+    XPRV_VERBYTES = bytes.fromhex("0488ade4")
+    P2PKH_VERBYTE = bytes.fromhex("00")
+    P2SH_VERBYTES = [bytes.fromhex("05")]
+    WIF_BYTE = bytes.fromhex("80")
+
     GENESIS_HASH = ('085bd64c8503b174830687e77ef54e0b'
                     'ef1e26b34d8eb2c55f6485f72d34f7f2')
 
