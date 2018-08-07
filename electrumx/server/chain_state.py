@@ -11,7 +11,7 @@ import pylru
 
 from aiorpcx import run_in_thread
 
-from electrumx.lib.hash import hash_to_hex_str
+from electrumx.lib.hash import hash_to_hex_str, Base58Error
 
 
 class ChainState(object):

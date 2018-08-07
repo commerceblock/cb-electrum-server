@@ -315,10 +315,10 @@ class MemPool(object):
 
 class OceanMemPool(MemPool):
     def _get_txout_value(self, txout):
-        s_value = txout.value
-        version = s_value[0]
+        s_value = txout.value[1:]
+        version = txout.value[0]
         if version == 1 or version == 0xff:
-            int_value, = unpack_uint64_from(s_value[1:], 0)
+            int_value, = unpack_uint64_from(s_value[::-1], 0)
             return int_value
         else:
             raise Exception("Confidential transactions are not yet handled")
