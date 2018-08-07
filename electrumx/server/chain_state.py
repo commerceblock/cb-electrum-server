@@ -11,7 +11,7 @@ import pylru
 
 from aiorpcx import run_in_thread
 
-from electrumx.lib.hash import hash_to_hex_str
+from electrumx.lib.hash import hash_to_hex_str, Base58Error
 
 
 class ChainState(object):
@@ -116,7 +116,7 @@ class ChainState(object):
                 print(f'Ingoring unknown arg: {arg}')
                 return None
 
-        for arg in args:
+        for arg in args[1:]:
             hashX = arg_to_hashX(arg)
             if not hashX:
                 continue
