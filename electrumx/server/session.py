@@ -762,6 +762,12 @@ class ElectrumX(SessionBase):
         utxos.extend(await self.mempool.unordered_UTXOs(hashX))
         spends = await self.mempool.potential_spends(hashX)
 
+        if self.env.coin.EXTENDED_VOUT:
+            return [{'tx_hash': hash_to_hex_str(utxo.tx_hash),
+                     'tx_pos': utxo.tx_pos,
+                     'height': utxo.height, 'value': utxo.value, 'asset': utxo.asset}
+                    for utxo in utxos
+                    if (utxo.tx_hash, utxo.tx_pos) not in spends]
         return [{'tx_hash': hash_to_hex_str(utxo.tx_hash),
                  'tx_pos': utxo.tx_pos,
                  'height': utxo.height, 'value': utxo.value}

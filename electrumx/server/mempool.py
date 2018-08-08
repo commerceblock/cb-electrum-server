@@ -17,7 +17,7 @@ from aiorpcx import TaskGroup, run_in_thread
 
 from electrumx.lib.hash import hash_to_hex_str, hex_str_to_hash
 from electrumx.lib.util import class_logger, chunks, unpack_uint64_from
-from electrumx.server.db import UTXO
+from electrumx.server.db import UTXO, UTXO_EXTENDED
 
 
 @attr.s(slots=True)
@@ -117,11 +117,11 @@ class MemPool(object):
 
             # Save the in_pairs, compute the fee and accept the TX
             tx.in_pairs = tuple(in_pairs)
-            tx.fee = (sum(v for hashX, v in tx.in_pairs) -
-                      sum(v for hashX, v in tx.out_pairs))
+            tx.fee = (sum(v for hashX, v, a in tx.in_pairs) -
+                      sum(v for hashX, v, a in tx.out_pairs))
             txs[hash] = tx
 
-            for hashX, value in itertools.chain(tx.in_pairs, tx.out_pairs):
+            for hashX, value, asset in itertools.chain(tx.in_pairs, tx.out_pairs):
                 touched.add(hashX)
                 hashXs[hashX].add(hash)
 
@@ -154,8 +154,8 @@ class MemPool(object):
         # First handle txs that have disappeared
         for tx_hash in set(txs).difference(all_hashes):
             tx = txs.pop(tx_hash)
-            tx_hashXs = set(hashX for hashX, value in tx.in_pairs)
-            tx_hashXs.update(hashX for hashX, value in tx.out_pairs)
+            tx_hashXs = set(hashX for hashX, value, asset in tx.in_pairs)
+            tx_hashXs.update(hashX for hashX, value, asset in tx.out_pairs)
             for hashX in tx_hashXs:
                 hashXs[hashX].remove(tx_hash)
                 if not hashXs[hashX]:
@@ -191,7 +191,12 @@ class MemPool(object):
         return touched
 
     def _get_txout_value(self, txout):
+        assert not self.coin.EXTENDED_VOUT
         return txout.value
+
+    def _get_txout_asset(self, txout):
+        assert not self.coin.EXTENDED_VOUT
+        return ""
 
     async def _fetch_and_accept(self, hashes, all_hashes, touched):
         '''Fetch a list of mempool transactions.'''
@@ -212,7 +217,7 @@ class MemPool(object):
                 # Convert the inputs and outputs into (hashX, value) pairs
                 txin_pairs = tuple((txin.prev_hash, txin.prev_idx)
                                    for txin in tx.inputs)
-                txout_pairs = tuple((to_hashX(txout.pk_script), self._get_txout_value(txout))
+                txout_pairs = tuple((to_hashX(txout.pk_script), self._get_txout_value(txout), self._get_txout_asset(txout))
                                     for txout in tx.outputs)
                 txs[hash] = MemPoolTx(txin_pairs, None, txout_pairs,
                                       0, tx_size)
@@ -262,8 +267,8 @@ class MemPool(object):
         if hashX in self.hashXs:
             for hash in self.hashXs[hashX]:
                 tx = self.txs[hash]
-                value -= sum(v for h168, v in tx.in_pairs if h168 == hashX)
-                value += sum(v for h168, v in tx.out_pairs if h168 == hashX)
+                value -= sum(v for h168, v, a in tx.in_pairs if h168 == hashX)
+                value += sum(v for h168, v, a in tx.out_pairs if h168 == hashX)
         return value
 
     async def compact_fee_histogram(self):
@@ -308,13 +313,17 @@ class MemPool(object):
         # hashXs is a defaultdict, so use get() to query
         for tx_hash in self.hashXs.get(hashX, ()):
             tx = self.txs.get(tx_hash)
-            for pos, (hX, value) in enumerate(tx.out_pairs):
+            for pos, (hX, value, asset) in enumerate(tx.out_pairs):
                 if hX == hashX:
-                    utxos.append(UTXO(-1, pos, tx_hash, 0, value))
+                    if self.coin.EXTENDED_VOUT:
+                        utxos.append(UTXO_EXTENDED(-1, pos, tx_hash, 0, value, asset))
+                    else:
+                        utxos.append(UTXO(-1, pos, tx_hash, 0, value))
         return utxos
 
 class OceanMemPool(MemPool):
     def _get_txout_value(self, txout):
+        assert self.coin.EXTENDED_VOUT
         s_value = txout.value[1:]
         version = txout.value[0]
         if version == 1 or version == 0xff:
@@ -322,3 +331,7 @@ class OceanMemPool(MemPool):
             return int_value
         else:
             raise Exception("Confidential transactions are not yet handled")
+
+    def _get_txout_asset(self, txout):
+        assert self.coin.EXTENDED_VOUT
+        return txout.asset[1:]

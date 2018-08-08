@@ -26,6 +26,7 @@ from electrumx.server.history import History
 
 
 UTXO = namedtuple("UTXO", "tx_num tx_pos tx_hash height value")
+UTXO_EXTENDED = namedtuple("UTXO", "tx_num tx_pos tx_hash height value asset")
 
 
 class DB(object):
@@ -394,9 +395,15 @@ class DB(object):
                 return
             limit -= 1
             tx_pos, tx_num = s_unpack('<HI', db_key[-6:])
-            value, = unpack('<Q', db_value)
             tx_hash, height = self.fs_tx_hash(tx_num)
-            yield UTXO(tx_num, tx_pos, tx_hash, height, value)
+
+            if self.coin.EXTENDED_VOUT:
+                asset = db_value[:32]
+                value, = unpack('<Q', db_value[32:40])
+                yield UTXO_EXTENDED(tx_num, tx_pos, tx_hash, height, value, asset)
+            else:
+                value, = unpack('<Q', db_value)
+                yield UTXO(tx_num, tx_pos, tx_hash, height, value)
 
     async def lookup_utxos(self, prevouts):
         '''For each prevout, lookup it up in the DB and return a (hashX,
@@ -440,8 +447,13 @@ class DB(object):
                     # This can happen if the DB was updated between
                     # getting the hashXs and getting the UTXOs
                     return None
+
+                if self.coin.EXTENDED_VOUT:
+                    asset = db_value[:32]
+                    value, = unpack('<Q', db_value[32:])
+                    return hashX, value, asset
                 value, = unpack('<Q', db_value)
-                return hashX, value
+                return hashX, value, ""
             return [lookup_utxo(*hashX_pair) for hashX_pair in hashX_pairs]
 
         hashX_pairs = await run_in_thread(lookup_hashXs)

@@ -37,12 +37,18 @@ def transaction_details(request):
     return request.param
 
 def _get_txout_value(coin, txout):
-    if coin.NAME == 'Ocean':
+    if coin.EXTENDED_VOUT:
         s_value = txout.value[1:]
         int_value, = unpack_uint64_from(s_value[::-1], 0)
         return int_value
     else:
         return txout.value
+
+def _get_txout_asset(coin, txout):
+    if coin.EXTENDED_VOUT:
+        return hash_to_hex_str(txout.asset[1:])
+    else:
+        return ""
 
 def test_transaction(transaction_details):
     coin, tx_info = transaction_details
@@ -60,6 +66,8 @@ def test_transaction(transaction_details):
     for i in range(len(vout)):
         # value pk_script
         assert vout[i]['value'] == _get_txout_value(coin, tx.outputs[i])
+        assert (vout[i]['asset'] == _get_txout_asset(coin, tx.outputs[i]) if 'asset' in vout[i]
+                                                else "" == _get_txout_asset(coin, tx.outputs[i]))
         spk = vout[i]['scriptPubKey']
         tx_pks = tx.outputs[i].pk_script
         assert spk['hex'] == tx_pks.hex()
