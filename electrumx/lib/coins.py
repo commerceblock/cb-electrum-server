@@ -46,7 +46,7 @@ import electrumx.lib.tx as lib_tx
 from electrumx.server.mempool import MemPool, OceanMemPool
 import electrumx.server.block_processor as block_proc
 import electrumx.server.daemon as daemon
-from electrumx.server.session import ElectrumX, DashElectrumX
+from electrumx.server.session import ElectrumX, DashElectrumX, OceanElectrumX
 
 
 Block = namedtuple("Block", "raw header transactions")
@@ -655,6 +655,8 @@ class Ocean(Coin):
     BASIC_HEADER_SIZE = 140
     STATIC_BLOCK_HEADERS = False
     EXTENDED_VOUT = True
+    DAEMON = daemon.OceanDaemon
+    SESSIONCLS = OceanElectrumX
     DESERIALIZER = lib_tx.DeserializerOcean
     BLOCK_PROCESSOR = block_proc.OceanBlockProcessor
     MEM_POOL = OceanMemPool

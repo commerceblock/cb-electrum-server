@@ -26,6 +26,7 @@ simple_commands = {
     'peers': 'Print information about peer servers for the same coin',
     'sessions': 'Print information about client sessions',
     'stop': 'Shut down the server cleanly',
+    'getcontract': 'Print the latest terms and conditions contract',
 }
 
 session_commands = {

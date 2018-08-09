@@ -129,7 +129,7 @@ class SessionManager(object):
         notifications.add_callback(self._notify_sessions)
 
         # Set up the RPC request handlers
-        cmds = ('add_peer daemon_url disconnect getinfo groups log peers '
+        cmds = ('add_peer daemon_url disconnect getinfo groups log peers getcontract '
                 'query reorg sessions stop'.split())
         self.rpc_handlers = {cmd: getattr(self, 'rpc_' + cmd) for cmd in cmds}
 
@@ -378,6 +378,10 @@ class SessionManager(object):
     def rpc_peers(self):
         '''Return a list of data about server peers.'''
         return self.peer_mgr.rpc_data()
+
+    async def rpc_getcontract(self):
+        '''Return the latest terms and conditions contract'''
+        return await self.chain_state.get_contract()
 
     async def rpc_query(self, items, limit):
         '''Return a list of data about server peers.'''
@@ -1212,6 +1216,38 @@ class LocalRPC(SessionBase):
     def request_handler(self, method):
         '''Return the async handler for the given request method.'''
         return self.session_mgr.rpc_handlers.get(method)
+
+class OceanElectrumX(ElectrumX):
+    def set_protocol_handlers(self, ptuple):
+        super().set_protocol_handlers(ptuple)
+        self.electrumx_handlers.update({
+            'blockchain.getcontract': self.get_contract,
+            'blockchain.getcontracthash': self.get_contract_hash
+        })
+
+    async def get_contract(self):
+        '''The latest ocean terms and conditions contract.'''
+        return await self.daemon_request('get_contract')
+
+    async def get_contract_hash(self, height):
+        '''The latest ocean terms and conditions hash.'''
+        height = non_negative_integer(height)
+        return await self.daemon_request('get_contract_hash', [height])
+
+    async def get_balance(self, hashX):
+        utxos = await self.chain_state.get_utxos(hashX)
+        confirmed = sum(utxo.value for utxo in utxos)
+        unconfirmed = await self.mempool.balance_delta(hashX)
+
+        asset_balance = {}
+        for utxo in self.get_utxos(hashX, limit=None):
+            asset_str = hash_to_hex_str(utxo.asset)
+            if utxo.asset in asset_balance:
+                asset_balace[asset_str] += utxo.value
+            else:
+                asset_balance[asset_str] = utxo.value
+
+        return {'confirmed': confirmed, 'unconfirmed': unconfirmed, 'confirmed_per_asset': asset_balance}
 
 
 class DashElectrumX(ElectrumX):
