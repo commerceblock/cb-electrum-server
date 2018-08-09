@@ -149,4 +149,7 @@ class ChainState(object):
             lines.append(f'Balance: {coin.decimal_value(balance):,f} '
                          f'{coin.SHORTNAME}')
 
+            asset_balance = db.get_asset_balance(hashX)
+            lines.append(f'Asset Balance: {asset_balance}')
+
         return lines

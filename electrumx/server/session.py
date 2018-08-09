@@ -1234,6 +1234,22 @@ class OceanElectrumX(ElectrumX):
         height = non_negative_integer(height)
         return await self.daemon_request('get_contract_hash', [height])
 
+    async def get_balance(self, hashX):
+        utxos = await self.chain_state.get_utxos(hashX)
+        confirmed = sum(utxo.value for utxo in utxos)
+        unconfirmed = await self.mempool.balance_delta(hashX)
+
+        asset_balance = {}
+        for utxo in self.get_utxos(hashX, limit=None):
+            asset_str = hash_to_hex_str(utxo.asset)
+            if utxo.asset in asset_balance:
+                asset_balace[asset_str] += utxo.value
+            else:
+                asset_balance[asset_str] = utxo.value
+
+        return {'confirmed': confirmed, 'unconfirmed': unconfirmed, 'confirmed_per_asset': asset_balance}
+
+
 class DashElectrumX(ElectrumX):
     '''A TCP server that handles incoming Electrum Dash connections.'''
 

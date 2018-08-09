@@ -380,6 +380,20 @@ class DB(object):
         '''Returns the confirmed balance of an address.'''
         return sum(utxo.value for utxo in self.get_utxos(hashX, limit=None))
 
+    def get_asset_balance(self, hashX):
+        '''Returns the per asset confirmed balance of an address.'''
+        if not self.coin.EXTENDED_VOUT:
+            return {}
+
+        asset_balance = {}
+        for utxo in self.get_utxos(hashX, limit=None):
+            asset_str = hash_to_hex_str(utxo.asset)
+            if utxo.asset in asset_balance:
+                asset_balace[asset_str] += utxo.value
+            else:
+                asset_balance[asset_str] = utxo.value
+        return asset_balance
+
     def get_utxos(self, hashX, limit=1000):
         '''Generator that yields all UTXOs for an address sorted in no
         particular order.  By default yields at most 1000 entries.
