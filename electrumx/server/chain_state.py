@@ -55,6 +55,9 @@ class ChainState(object):
             'db_height': self.db_height(),
         }
 
+    async def get_contract(self):
+        return await self._daemon.get_contract()
+
     async def get_history(self, hashX):
         '''Get history asynchronously to reduce latency.'''
         def job():
@@ -116,7 +119,7 @@ class ChainState(object):
                 print(f'Ingoring unknown arg: {arg}')
                 return None
 
-        for arg in args[1:]:
+        for arg in args:
             hashX = arg_to_hashX(arg)
             if not hashX:
                 continue

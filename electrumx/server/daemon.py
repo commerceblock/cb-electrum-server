@@ -283,6 +283,15 @@ class Daemon(object):
         If the daemon has not been queried yet this returns None.'''
         return self._height
 
+class OceanDaemon(Daemon):
+
+    async def get_contract(self):
+        '''Get latest terms and conditions.'''
+        return await self._send_single('getcontract')
+
+    async def get_contract_hash(self, params):
+        '''Get latest terms and conditions.'''
+        return await self._send_single('getcontracthash', params)
 
 class DashDaemon(Daemon):
 
