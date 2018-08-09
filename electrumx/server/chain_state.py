@@ -11,7 +11,7 @@ import pylru
 
 from aiorpcx import run_in_thread
 
-from electrumx.lib.hash import hash_to_hex_str
+from electrumx.lib.hash import hash_to_hex_str, Base58Error
 
 
 class ChainState(object):
@@ -116,7 +116,7 @@ class ChainState(object):
                 print(f'Ingoring unknown arg: {arg}')
                 return None
 
-        for arg in args:
+        for arg in args[1:]:
             hashX = arg_to_hashX(arg)
             if not hashX:
                 continue
@@ -129,10 +129,16 @@ class ChainState(object):
                 lines.append('No history found')
             n = None
             for n, utxo in enumerate(db.get_utxos(hashX, limit), start=1):
-                lines.append(f'UTXO #{n:,d}: tx_hash '
-                             f'{hash_to_hex_str(utxo.tx_hash)} '
-                             f'tx_pos {utxo.tx_pos:,d} height '
-                             f'{utxo.height:,d} value {utxo.value:,d}')
+                if self._env.coin.EXTENDED_VOUT:
+                    lines.append(f'UTXO #{n:,d}: tx_hash '
+                                 f'{hash_to_hex_str(utxo.tx_hash)} '
+                                 f'tx_pos {utxo.tx_pos:,d} height '
+                                 f'{utxo.height:,d} value {utxo.value:,d} asset {hash_to_hex_str(utxo.asset)}')
+                else:
+                    lines.append(f'UTXO #{n:,d}: tx_hash '
+                                 f'{hash_to_hex_str(utxo.tx_hash)} '
+                                 f'tx_pos {utxo.tx_pos:,d} height '
+                                 f'{utxo.height:,d} value {utxo.value:,d}')
             if n is None:
                 lines.append('No UTXOs found')
 

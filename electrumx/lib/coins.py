@@ -67,6 +67,7 @@ class Coin(object):
     CHUNK_SIZE = 2016
     BASIC_HEADER_SIZE = 80
     STATIC_BLOCK_HEADERS = True
+    EXTENDED_VOUT = False
     SESSIONCLS = ElectrumX
     DESERIALIZER = lib_tx.Deserializer
     DAEMON = daemon.Daemon
@@ -653,6 +654,7 @@ class Ocean(Coin):
 
     BASIC_HEADER_SIZE = 140
     STATIC_BLOCK_HEADERS = False
+    EXTENDED_VOUT = True
     DESERIALIZER = lib_tx.DeserializerOcean
     BLOCK_PROCESSOR = block_proc.OceanBlockProcessor
     MEM_POOL = OceanMemPool
