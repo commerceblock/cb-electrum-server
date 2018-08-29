@@ -415,6 +415,7 @@ class DeserializerOcean(Deserializer):
         if flag & 1:
             witness_in = self._read_witness_in(len(inputs))
             witness_out = self._read_witness_out(len(outputs))
+            flag ^= 1
 
         base_size = len(orig_ser)
         full_size = base_size + len(self.binary[start:self.cursor])
@@ -446,7 +447,7 @@ class DeserializerOcean(Deserializer):
                     amount,
                     inflation
                 )
-                prev_idx &= TxInputOcean.OUTPOINT_INDEX_MASK
+            prev_idx &= TxInputOcean.OUTPOINT_INDEX_MASK
 
         return TxInputOcean(
             prev_hash,
