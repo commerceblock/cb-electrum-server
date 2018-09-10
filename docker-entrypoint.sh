@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-export HOST=""
 export RPC_HOST="$(uname -n)"
 
 if [[ "$1" = "electrumx_server" ]]; then
