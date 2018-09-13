@@ -652,7 +652,7 @@ class Ocean(Coin):
     SHORTNAME = "CBT"
     NET = "mainnet"
 
-    BASIC_HEADER_SIZE = 140
+    BASIC_HEADER_SIZE = 172
     STATIC_BLOCK_HEADERS = False
     EXTENDED_VOUT = True
     DAEMON = daemon.OceanDaemon
@@ -677,14 +677,13 @@ class Ocean(Coin):
     P2SH_VERBYTES = [bytes.fromhex("05")]
     WIF_BYTE = bytes.fromhex("80")
 
-    GENESIS_HASH = ('085bd64c8503b174830687e77ef54e0b'
-                    'ef1e26b34d8eb2c55f6485f72d34f7f2')
+    GENESIS_HASH = ('a46f19fe73b70ca70bfcfa4ed71994d8f10df5d017e7213adc14445669a6c3ce')
 
     TX_COUNT = 200
     TX_COUNT_HEIGHT = 100
     TX_PER_BLOCK = 2
 
-    # electrum header NOT TESTED
+    # electrum header
     @classmethod
     def electrum_header(cls, header, height):
         version, = struct.unpack('<I', header[:4])
@@ -711,6 +710,7 @@ class Ocean(Coin):
             'merkle_root': hash_to_hex_str(header[36:68]),
             'contract_hash': hash_to_hex_str(header[68:100]),
             'attestation_hash': hash_to_hex_str(header[100:132]),
+            'mapping_hash': hash_to_hex_str(header[132:164]),
             'timestamp': timestamp,
             'challenge': challenge,
             'proof': proof
@@ -742,10 +742,10 @@ class Ocean(Coin):
 
 class OceanTestnet(Ocean):
     NET = "testnet"
-    BASIC_HEADER_SIZE = 108     # excluding attestation hash
+    BASIC_HEADER_SIZE = 108     # excluding attestation hash and mapping hash
     GENESIS_HASH = ('357abd41543a09f9290ff4b4ae008e317f252b80c96492bd9f346cced0943a7f')
 
-    # electrum header NOT TESTED
+    # electrum header
     @classmethod
     def electrum_header(cls, header, height):
         version, = struct.unpack('<I', header[:4])
