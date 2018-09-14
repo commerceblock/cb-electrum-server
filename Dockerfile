@@ -46,7 +46,10 @@ RUN set -x \
     && python3 get-pip.py \
     && rm -f get-pip.py \
     && python3 setup.py build \
-    && python3 setup.py install
+    && python3 setup.py install \
+    && echo "Running tests" \
+    && pip3 install ecdsa pytest \
+    && pytest -v
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["electrum_server"]
