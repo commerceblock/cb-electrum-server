@@ -173,7 +173,7 @@ def test_MAX_SUBS():
     assert_integer('MAX_SUBS', 'max_subs', 250000)
 
 def test_MAX_SESSIONS():
-    too_big = 1000000
+    too_big = 10000000
     os.environ['MAX_SESSIONS'] = str(too_big)
     e = Env()
     assert e.max_sessions < too_big
