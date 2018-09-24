@@ -769,7 +769,7 @@ class ElectrumX(SessionBase):
         if self.env.coin.EXTENDED_VOUT:
             return [{'tx_hash': hash_to_hex_str(utxo.tx_hash),
                      'tx_pos': utxo.tx_pos,
-                     'height': utxo.height, 'value': utxo.value, 'asset': utxo.asset}
+                     'height': utxo.height, 'value': utxo.value, 'asset': hash_to_hex_str(utxo.asset)}
                     for utxo in utxos
                     if (utxo.tx_hash, utxo.tx_pos) not in spends]
         return [{'tx_hash': hash_to_hex_str(utxo.tx_hash),
@@ -1240,7 +1240,7 @@ class OceanElectrumX(ElectrumX):
         unconfirmed = await self.mempool.balance_delta(hashX)
 
         asset_balance = {}
-        for utxo in self.get_utxos(hashX, limit=None):
+        for utxo in utxos:
             asset_str = hash_to_hex_str(utxo.asset)
             if utxo.asset in asset_balance:
                 asset_balace[asset_str] += utxo.value
