@@ -48,7 +48,7 @@ RUN set -x \
     && python3 setup.py build \
     && python3 setup.py install \
     && echo "Running tests" \
-    && pip3 install ecdsa pytest \
+    && pip3 install ecdsa pytest==3.8.1 \
     && pytest -v
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
