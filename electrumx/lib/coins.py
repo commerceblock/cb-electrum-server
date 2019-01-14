@@ -742,39 +742,7 @@ class Ocean(Coin):
 
 class OceanTestnet(Ocean):
     NET = "testnet"
-    BASIC_HEADER_SIZE = 108     # excluding attestation hash and mapping hash
     GENESIS_HASH = ('357abd41543a09f9290ff4b4ae008e317f252b80c96492bd9f346cced0943a7f')
-
-    # electrum header
-    @classmethod
-    def electrum_header(cls, header, height):
-        version, = struct.unpack('<I', header[:4])
-        timestamp, block_height = struct.unpack('<II', header[cls.BASIC_HEADER_SIZE-8:
-                                                            cls.BASIC_HEADER_SIZE])
-
-        assert block_height == height
-
-        challenge = ''
-        proof = ''
-        challenge_size = header[cls.BASIC_HEADER_SIZE]
-        if challenge_size > 0:
-            challenge = hash_to_hex_str(header[cls.BASIC_HEADER_SIZE+1:
-                                                cls.BASIC_HEADER_SIZE+1+challenge_size])
-            proof_size = header[cls.BASIC_HEADER_SIZE+1+challenge_size]
-            if proof_size > 0:
-                proof = hash_to_hex_str(header[cls.BASIC_HEADER_SIZE+1+challenge_size+1:
-                                            cls.BASIC_HEADER_SIZE+1+challenge_size+1+proof_size])
-
-        return {
-            'block_height': height,
-            'version': version,
-            'prev_block_hash': hash_to_hex_str(header[4:36]),
-            'merkle_root': hash_to_hex_str(header[36:68]),
-            'contract_hash': hash_to_hex_str(header[68:100]),
-            'timestamp': timestamp,
-            'challenge': challenge,
-            'proof': proof
-        }
 
 class Litecoin(Coin):
     NAME = "Litecoin"
