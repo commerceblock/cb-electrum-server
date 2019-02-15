@@ -26,7 +26,7 @@ Environmental Variables Required
 - DB_DIRECTORY = ~/db_directory   # or any custom dir
 - DAEMON_URL = RPC_USER:RPC_PASS@RPC_HOST:RPC_PORT/
 - COIN = Ocean
-- NET = testnet   # or mainnet / testnet excludes attestation hash and mapping hash
+- NET = testnet   # or mainnet
 
 Unit Testing
 =============
