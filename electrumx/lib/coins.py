@@ -661,15 +661,6 @@ class Ocean(Coin):
     BLOCK_PROCESSOR = block_proc.OceanBlockProcessor
     MEM_POOL = OceanMemPool
 
-    '''
-    # Ocean - CustomParams
-    XPUB_VERBYTES = bytes.fromhex("043587cf")
-    XPRV_VERBYTES = bytes.fromhex("04358394")
-    P2PKH_VERBYTE = bytes.fromhex("eb")
-    P2SH_VERBYTES = [bytes.fromhex("4b")]
-    WIF_BYTE = bytes.fromhex("ef")
-    '''
-
     # Ocean - MainParams
     XPUB_VERBYTES = bytes.fromhex("0488b21e")
     XPRV_VERBYTES = bytes.fromhex("0488ade4")
@@ -743,6 +734,19 @@ class Ocean(Coin):
 class OceanTestnet(Ocean):
     NET = "testnet"
     GENESIS_HASH = ('357abd41543a09f9290ff4b4ae008e317f252b80c96492bd9f346cced0943a7f')
+
+    # Ocean - CustomParams
+    XPUB_VERBYTES = bytes.fromhex("043587cf")
+    XPRV_VERBYTES = bytes.fromhex("04358394")
+    P2PKH_VERBYTE = bytes.fromhex("eb")
+    P2SH_VERBYTES = [bytes.fromhex("4b")]
+    WIF_BYTE = bytes.fromhex("ef")
+
+class GoldTest(OceanTestnet):
+    NAME = "Gold"
+    SHORTNAME = "GGG"
+
+    GENESIS_HASH = ('483c0005476cdbafc78999dc8c29708d46ace4945c4574a94736af7f40fc5b96')
 
 class Litecoin(Coin):
     NAME = "Litecoin"
