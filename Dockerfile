@@ -37,7 +37,7 @@ RUN set -x \
     && gosu nobody true
 
 COPY . /usr/src/cb-electrum-server
-COPY docker-entrypoint.sh /
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 # Build Electrum server
 RUN set -x \
@@ -52,4 +52,3 @@ RUN set -x \
     && pytest -v
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["electrum_server"]
