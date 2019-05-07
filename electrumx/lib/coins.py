@@ -668,7 +668,7 @@ class Ocean(Coin):
     P2SH_VERBYTES = [bytes.fromhex("05")]
     WIF_BYTE = bytes.fromhex("80")
 
-    GENESIS_HASH = ('73902d2a365fff2724e26d975148124268ec6a84991016683817ea2c973b199b')
+    GENESIS_HASH = ('bfe729824e42eea210dcce52e33720b3a9962baf1730d4ddf19f804875be804a')
 
     TX_COUNT = 200
     TX_COUNT_HEIGHT = 100
