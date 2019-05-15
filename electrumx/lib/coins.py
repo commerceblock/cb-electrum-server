@@ -746,7 +746,7 @@ class GoldTest(OceanTestnet):
     NAME = "Gold"
     SHORTNAME = "GGG"
 
-    GENESIS_HASH = ('618eb3df3fea8e8ff76bf0c32f34b3bd5a8250a9a99026e89bebc10bad815970')
+    GENESIS_HASH = ('5e94f35373cb088fda819150f59cb33baa51280206d308e9e29d7bef90c76bce')
 
 class Litecoin(Coin):
     NAME = "Litecoin"
