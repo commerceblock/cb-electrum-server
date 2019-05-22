@@ -27,6 +27,7 @@ Environmental Variables Required
 - DAEMON_URL = RPC_USER:RPC_PASS@RPC_HOST:RPC_PORT/
 - COIN = Ocean
 - NET = testnet   # or mainnet
+- GENESIS_HASH = <hash> # e.g. 357abd41543a09f9290ff4b4ae008e317f252b80c96492bd9f346cced0943a7f
 
 Unit Testing
 =============

@@ -37,6 +37,7 @@ from decimal import Decimal
 from hashlib import sha256
 from functools import partial
 import base64
+import os
 
 import electrumx.lib.util as util
 from electrumx.lib.hash import Base58, hash160, double_sha256, hash_to_hex_str
@@ -668,7 +669,7 @@ class Ocean(Coin):
     P2SH_VERBYTES = [bytes.fromhex("05")]
     WIF_BYTE = bytes.fromhex("80")
 
-    GENESIS_HASH = ('bfe729824e42eea210dcce52e33720b3a9962baf1730d4ddf19f804875be804a')
+    GENESIS_HASH = os.getenv('GENESIS_HASH', 'bfe729824e42eea210dcce52e33720b3a9962baf1730d4ddf19f804875be804a')
 
     TX_COUNT = 200
     TX_COUNT_HEIGHT = 100
@@ -733,7 +734,7 @@ class Ocean(Coin):
 
 class OceanTestnet(Ocean):
     NET = "testnet"
-    GENESIS_HASH = ('357abd41543a09f9290ff4b4ae008e317f252b80c96492bd9f346cced0943a7f')
+    GENESIS_HASH = os.getenv('GENESIS_HASH', '357abd41543a09f9290ff4b4ae008e317f252b80c96492bd9f346cced0943a7f')
 
     # Ocean - CustomParams
     XPUB_VERBYTES = bytes.fromhex("043587cf")
@@ -746,7 +747,7 @@ class GoldTest(OceanTestnet):
     NAME = "Gold"
     SHORTNAME = "GGG"
 
-    GENESIS_HASH = ('5e94f35373cb088fda819150f59cb33baa51280206d308e9e29d7bef90c76bce')
+    GENESIS_HASH = os.getenv('GENESIS_HASH', '5e94f35373cb088fda819150f59cb33baa51280206d308e9e29d7bef90c76bce')
 
 class Litecoin(Coin):
     NAME = "Litecoin"
