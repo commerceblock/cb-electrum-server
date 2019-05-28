@@ -18,7 +18,6 @@ RUN set -x \
        jq \
        leveldb \
        python36 \
-    && ln -s /usr/bin/python36 /usr/bin/python3 \
     && yum clean all \
     && rm -rf /var/cache/yum
 
