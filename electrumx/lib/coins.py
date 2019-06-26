@@ -749,6 +749,17 @@ class GoldTest(OceanTestnet):
 
     GENESIS_HASH = os.getenv('GENESIS_HASH', '5e94f35373cb088fda819150f59cb33baa51280206d308e9e29d7bef90c76bce')
 
+class Gold(Ocean):
+    NAME = "Gold"
+    SHORTNAME = "GGG"
+
+    # Ocean - GoldParams
+    P2PKH_VERBYTE = bytes.fromhex("26")
+    P2SH_VERBYTES = [bytes.fromhex("61")]
+    WIF_BYTE = bytes.fromhex("b4")
+
+    GENESIS_HASH = os.getenv('GENESIS_HASH', '')
+
 class Litecoin(Coin):
     NAME = "Litecoin"
     SHORTNAME = "LTC"
