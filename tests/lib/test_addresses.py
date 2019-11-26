@@ -29,8 +29,8 @@ import pytest
 import electrumx.lib.coins as coins
 
 addresses = [
-    (coins.Ocean, "16QtLHVXWUL6atM7ycK2zRYWVpqPc2mor8",
-    "3b5d0bd69fa95eeaff08a05d158b1b83ca408a6b", "9ea876a900b66ce367385e"),
+    (coins.Ocean, "CTc4tUSv2AWEX6QzFCwafAcZoq6y6XVLTh",
+    "7a3552fdea28b72bf73c0d75513f8f07c4057cdd", "5042aa27607b25623b7978"),
 ]
 
 
