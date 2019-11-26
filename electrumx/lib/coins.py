@@ -665,11 +665,11 @@ class Ocean(Coin):
     # Ocean - MainParams
     XPUB_VERBYTES = bytes.fromhex("0488b21e")
     XPRV_VERBYTES = bytes.fromhex("0488ade4")
-    P2PKH_VERBYTE = bytes.fromhex("00")
-    P2SH_VERBYTES = [bytes.fromhex("05")]
+    P2PKH_VERBYTE = bytes.fromhex("1c")
+    P2SH_VERBYTES = [bytes.fromhex("57")]
     WIF_BYTE = bytes.fromhex("80")
 
-    GENESIS_HASH = os.getenv('GENESIS_HASH', 'bfe729824e42eea210dcce52e33720b3a9962baf1730d4ddf19f804875be804a')
+    GENESIS_HASH = os.getenv('GENESIS_HASH', 'b9b3c4cc7c4879f631c8bfc1fbd7595a839d4488cdb2170afe1286c154b0e318')
 
     TX_COUNT = 200
     TX_COUNT_HEIGHT = 100
@@ -734,7 +734,7 @@ class Ocean(Coin):
 
 class OceanTestnet(Ocean):
     NET = "testnet"
-    GENESIS_HASH = os.getenv('GENESIS_HASH', '357abd41543a09f9290ff4b4ae008e317f252b80c96492bd9f346cced0943a7f')
+    GENESIS_HASH = os.getenv('GENESIS_HASH', 'e4f47c06074d9615d8eca96b23a31caec3c9ce8c8130a377f99d715990161071')
 
     # Ocean - CustomParams
     XPUB_VERBYTES = bytes.fromhex("043587cf")
