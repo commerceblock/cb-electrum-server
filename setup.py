@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import setuptools
 version = '2.1.0'
 

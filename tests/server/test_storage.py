@@ -20,7 +20,11 @@ for c in subclasses(Storage):
 def db(tmpdir, request):
     cwd = os.getcwd()
     os.chdir(str(tmpdir))
-    db = db_class(request.param)("db", False)
+    try:
+        name = request.param.args[0]
+    except AttributeError:
+        name = request.param
+    db = db_class(name)("db", False)
     yield db
     os.chdir(cwd)
     db.close()

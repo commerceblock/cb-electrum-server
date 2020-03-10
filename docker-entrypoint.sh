@@ -12,6 +12,8 @@ if [ -f /run/secrets/ocean_pass ] && [ ! -f /run/secrets/ocean_user ]; then
 fi
 
 if [[ "$1" = "electrumx_server" ]]; then
+    chown -R bitcoin /electrum-db
+    gosu bitcoin /usr/src/cb-electrum-server/compact_history.py
     exec gosu bitcoin "$@"
 elif [[ "$1" == "electrumx_rpc" ]]; then
     exec gosu bitcoin "$@"
