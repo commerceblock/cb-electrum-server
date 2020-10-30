@@ -1062,8 +1062,11 @@ class ElectrumX(SessionBase):
             error, = e.args
             message = error['message']
             self.logger.info('sendrawtransaction: {}'.format(message))
-            raise RPCError(BAD_REQUEST, 'the transaction was rejected by '
-                           f'network rules.\n\n{message}\n[{raw_tx}]')
+            if "contract-missing" in message:
+                raise RPCError(BAD_REQUEST, 'Incorrect contract hash.\nUpgrade to the latest version https://github.com/goldtokensa/ocean-wallet/releases')
+            else:
+                raise RPCError(BAD_REQUEST, 'the transaction was rejected by '
+                               f'network rules.\n\n{message}\n[{raw_tx}]')
 
     async def transaction_get(self, tx_hash, verbose=False):
         '''Return the serialized raw transaction given its hash
